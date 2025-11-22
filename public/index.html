@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Chat</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>Claude Chat</h1>
+                <button class="new-chat-btn" id="newChatBtn">
+                    <span>+</span> New Chat
+                </button>
+            </div>
+            <div class="chat-history" id="chatHistory">
+                <!-- Chat history items will be dynamically added here -->
+            </div>
+            <div class="sidebar-footer">
+                <div class="model-info">
+                    <span class="model-badge">Claude Sonnet 4.5</span>
+                    <span class="model-date">2025-09-29</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="main-content">
+            <div class="chat-container" id="chatContainer">
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-content">
+                        <h2>Welcome to Claude Chat</h2>
+                        <p>Start a conversation with Claude Sonnet 4</p>
+                        <div class="example-prompts">
+                            <div class="prompt-card" data-prompt="Explain quantum computing in simple terms">
+                                <span class="prompt-icon">💡</span>
+                                <span>Explain quantum computing</span>
+                            </div>
+                            <div class="prompt-card" data-prompt="Write a Python function to find prime numbers">
+                                <span class="prompt-icon">💻</span>
+                                <span>Write code examples</span>
+                            </div>
+                            <div class="prompt-card" data-prompt="Help me plan a trip to Japan">
+                                <span class="prompt-icon">✈️</span>
+                                <span>Plan activities</span>
+                            </div>
+                            <div class="prompt-card" data-prompt="Explain machine learning algorithms">
+                                <span class="prompt-icon">🤖</span>
+                                <span>Learn new concepts</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="messages" id="messages">
+                    <!-- Messages will be dynamically added here -->
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-container">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Message Claude..." 
+                        rows="1"
+                        maxlength="4000"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn" disabled>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span class="char-count" id="charCount">0/4000</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
