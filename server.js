@@ -134,7 +134,7 @@ Enhanced prompt (output ONLY the enhanced prompt, nothing else):`;
 
         const claudeResponse = await anthropic.messages.create({
             model: 'claude-sonnet-4-5-20250929',
-            max_tokens: 4096,
+            max_tokens: 8192,
             system: 'You are a highly knowledgeable, detailed AI assistant. Provide comprehensive, thorough responses with examples, explanations, and practical insights. Break down complex topics clearly. Be informative and educational.',
             messages: claudeMessages,
             temperature: 1.0,
