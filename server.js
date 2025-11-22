@@ -33,29 +33,54 @@ function getNextGeminiKey() {
     return key;
 }
 
-// Call Gemini with automatic key rotation on error
-async function callGemini(model, prompt, maxRetries = 55) {
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-            const apiKey = getNextGeminiKey();
-            const ai = new GoogleGenAI({ apiKey });
-            
-            const response = await ai.models.generateContent({
-                model,
-                contents: prompt,
-            });
-            
-            return response.text;
-        } catch (error) {
-            console.log(`Gemini API attempt ${attempt + 1} failed, rotating key...`);
-            if (attempt === maxRetries - 1) {
-                throw error;
+// Available Gemini models (in order of preference)
+const GEMINI_MODELS = [
+    'gemini-2.5-flash',
+    'gemini-2.5-pro',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-1.5-flash-8b'
+];
+
+// Call Gemini with automatic key and model rotation on error
+async function callGemini(preferredModel, prompt, maxRetries = 10) {
+    let modelIndex = GEMINI_MODELS.indexOf(preferredModel);
+    if (modelIndex === -1) modelIndex = 0;
+    
+    // Try each model
+    for (let modelAttempt = 0; modelAttempt < GEMINI_MODELS.length; modelAttempt++) {
+        const currentModel = GEMINI_MODELS[(modelIndex + modelAttempt) % GEMINI_MODELS.length];
+        console.log(`Trying model: ${currentModel}`);
+        
+        // Try multiple keys for this model
+        for (let keyAttempt = 0; keyAttempt < maxRetries; keyAttempt++) {
+            try {
+                const apiKey = getNextGeminiKey();
+                const ai = new GoogleGenAI({ apiKey });
+                
+                const response = await ai.models.generateContent({
+                    model: currentModel,
+                    contents: prompt,
+                });
+                
+                console.log(`✅ Success with model: ${currentModel}`);
+                return response.text;
+            } catch (error) {
+                console.log(`Key attempt ${keyAttempt + 1}/${maxRetries} failed for ${currentModel}`);
+                
+                // If this was the last key attempt for this model, try next model
+                if (keyAttempt === maxRetries - 1) {
+                    console.log(`All keys exhausted for ${currentModel}, trying next model...`);
+                    break;
+                }
+                
+                // Wait 2 seconds before trying next key
+                await new Promise(resolve => setTimeout(resolve, 2000));
             }
-            // Wait 2 seconds before trying next key (allows rate limits to reset)
-            console.log('Waiting 2 seconds before next attempt...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
         }
     }
+    
+    throw new Error('All Gemini models and keys exhausted');
 }
 
 // Chat endpoint with three-step workflow
