@@ -241,7 +241,6 @@ body {
 /* Messages */
 .messages {
     padding: 20px;
-    max-width: 1400px;
     margin: 0 auto;
     width: 100%;
 }
@@ -366,7 +365,6 @@ body {
 }
 
 .input-container {
-    max-width: 1400px;
     margin: 0 auto;
     display: flex;
     gap: 12px;
@@ -425,7 +423,6 @@ body {
 }
 
 .input-footer {
-    max-width: 1400px;
     margin: 8px auto 0;
     display: flex;
     justify-content: flex-end;
