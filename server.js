@@ -246,7 +246,20 @@ Enhanced prompt (output ONLY the enhanced prompt, nothing else):`;
         const claudeResponse = await anthropic.messages.create({
             model: 'claude-sonnet-4-5-20250929',
             max_tokens: 8192,
-            system: 'You are a highly knowledgeable, detailed AI assistant. Provide comprehensive, thorough responses with examples, explanations, and practical insights. Break down complex topics clearly. Be informative and educational.',
+            system: `You are a highly knowledgeable, detailed AI assistant. Provide comprehensive, thorough responses with examples, explanations, and practical insights. Break down complex topics clearly. Be informative and educational.
+
+IMPORTANT CODE EXPLANATION RULES:
+- When explaining code, NEVER use inline comments within the code
+- Always provide clean, uncommented code blocks
+- Write explanations SEPARATELY before or after the code block
+- Use numbered steps or bullet points to explain what each part does
+- Make explanations clear and detailed, but keep code clean and readable
+- Example format:
+  1. First, explain what the code will do
+  2. Show the clean code without comments
+  3. Then explain line by line what each section does
+
+This makes the code much more readable and the explanations clearer.`,
             messages: claudeMessages,
             temperature: 1.0,
         });
