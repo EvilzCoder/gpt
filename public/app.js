@@ -319,18 +319,65 @@ class ChatApp {
     }
 
     formatMessage(content) {
-        // Escape HTML
+        // Escape HTML first
         let formatted = this.escapeHtml(content);
         
-        // Format code blocks
+        // Format code blocks (must be before other formatting)
         formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
             return `<pre><code>${code.trim()}</code></pre>`;
         });
 
-        // Format inline code
+        // Format inline code (must be before other formatting)
         formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
 
-        // Format line breaks
+        // Format headers
+        formatted = formatted.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        formatted = formatted.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        formatted = formatted.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+        // Format bold text (**text** or __text__)
+        formatted = formatted.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+        formatted = formatted.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+
+        // Format italic text (*text* or _text_)
+        formatted = formatted.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
+        formatted = formatted.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+        // Format strikethrough (~~text~~)
+        formatted = formatted.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
+        // Format unordered lists
+        formatted = formatted.replace(/^\* (.+)$/gim, '<li>$1</li>');
+        formatted = formatted.replace(/^- (.+)$/gim, '<li>$1</li>');
+        
+        // Wrap consecutive <li> tags in <ul>
+        formatted = formatted.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
+            return '<ul>' + match + '</ul>';
+        });
+
+        // Format ordered lists
+        formatted = formatted.replace(/^\d+\. (.+)$/gim, '<li>$1</li>');
+        
+        // Wrap numbered list items in <ol>
+        formatted = formatted.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
+            // Only wrap if not already in ul
+            if (!match.includes('<ul>')) {
+                return '<ol>' + match + '</ol>';
+            }
+            return match;
+        });
+
+        // Format links [text](url)
+        formatted = formatted.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+        // Format blockquotes
+        formatted = formatted.replace(/^&gt; (.+)$/gim, '<blockquote>$1</blockquote>');
+
+        // Format horizontal rules
+        formatted = formatted.replace(/^---$/gim, '<hr>');
+        formatted = formatted.replace(/^\*\*\*$/gim, '<hr>');
+
+        // Format line breaks (do this last)
         formatted = formatted.replace(/\n/g, '<br>');
 
         return formatted;
