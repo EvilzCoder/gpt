@@ -18,16 +18,26 @@ const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// Load Gemini API keys
-const geminiKeys = fs.readFileSync('keys.txt', 'utf-8')
-    .split('\n')
-    .map(key => key.trim())
-    .filter(key => key.length > 0);
-
+// Load Gemini API keys (optional)
+let geminiKeys = [];
 let currentKeyIndex = 0;
+
+try {
+    geminiKeys = fs.readFileSync('keys.txt', 'utf-8')
+        .split('\n')
+        .map(key => key.trim())
+        .filter(key => key.length > 0);
+    console.log(`✅ Loaded ${geminiKeys.length} Gemini API keys from keys.txt`);
+} catch (error) {
+    console.warn('⚠️  WARNING: keys.txt not found. Translation features will be disabled.');
+    console.warn('   Create keys.txt with Gemini API keys (one per line) to enable translation.\n');
+}
 
 // Get next Gemini key (with rotation)
 function getNextGeminiKey() {
+    if (geminiKeys.length === 0) {
+        throw new Error('No Gemini API keys available');
+    }
     const key = geminiKeys[currentKeyIndex];
     currentKeyIndex = (currentKeyIndex + 1) % geminiKeys.length;
     return key;
@@ -170,9 +180,12 @@ app.post('/api/chat', async (req, res) => {
         console.log('\n🔄 Starting two-step workflow...');
         console.log('📝 Original user input:', userMessage);
 
-        // STEP 1: Enhance prompt with Gemini 2.5-pro
-        console.log('\n⚡ STEP 1: Enhancing prompt with Gemini 2.5-pro...');
-        const enhancePrompt = `You are a prompt enhancement specialist. Transform the following user input into a detailed, comprehensive prompt that will elicit a thorough, informative response from an AI assistant.
+        // STEP 1: Enhance prompt with Gemini 2.5-pro (if keys available)
+        let enhancedPrompt = userMessage;
+        
+        if (geminiKeys.length > 0) {
+            console.log('\n⚡ STEP 1: Enhancing prompt with Gemini 2.5-pro...');
+            const enhancePrompt = `You are a prompt enhancement specialist. Transform the following user input into a detailed, comprehensive prompt that will elicit a thorough, informative response from an AI assistant.
 
 Make the prompt:
 - More specific and detailed
@@ -185,13 +198,15 @@ User input: ${userMessage}
 
 Enhanced prompt (output ONLY the enhanced prompt, nothing else):`;
 
-        let enhancedPrompt;
-        try {
-            enhancedPrompt = await callGemini('gemini-2.5-pro', enhancePrompt);
-            console.log('✅ Enhanced prompt created');
-        } catch (error) {
-            console.log('⚠️ Prompt enhancement failed, using original prompt');
-            enhancedPrompt = userMessage;
+            try {
+                enhancedPrompt = await callGemini('gemini-2.5-pro', enhancePrompt);
+                console.log('✅ Enhanced prompt created');
+            } catch (error) {
+                console.log('⚠️ Prompt enhancement failed, using original prompt');
+                enhancedPrompt = userMessage;
+            }
+        } else {
+            console.log('\n⚠️ STEP 1: Skipped (no Gemini keys), using original prompt');
         }
 
         // STEP 2: Send enhanced prompt to Claude for response
@@ -215,16 +230,20 @@ Enhanced prompt (output ONLY the enhanced prompt, nothing else):`;
         const englishResponse = claudeResponse.content[0].text;
         console.log('✅ Claude response generated');
 
-        // STEP 3: Translate to Myanmar using chunked translation
-        console.log('\n⚡ STEP 3: Translating to Myanmar (chunked)...');
+        // STEP 3: Translate to Myanmar using chunked translation (if keys available)
+        let finalResponse = englishResponse;
         
-        let finalResponse;
-        try {
-            finalResponse = await translateInChunks(englishResponse, 'gemini-2.5-flash');
-            console.log('✅ Translation complete!');
-        } catch (error) {
-            console.log('⚠️ Translation failed, returning English response');
-            finalResponse = englishResponse;
+        if (geminiKeys.length > 0) {
+            console.log('\n⚡ STEP 3: Translating to Myanmar (chunked)...');
+            try {
+                finalResponse = await translateInChunks(englishResponse, 'gemini-2.5-flash');
+                console.log('✅ Translation complete!');
+            } catch (error) {
+                console.log('⚠️ Translation failed, returning English response');
+                finalResponse = englishResponse;
+            }
+        } else {
+            console.log('\n⚠️ STEP 3: Skipped (no Gemini keys), returning English response');
         }
         
         console.log('\n✨ Workflow complete!\n');
