@@ -18,29 +18,53 @@ const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// Load Gemini API keys (optional)
-let geminiKeys = [];
-let currentKeyIndex = 0;
+// Load Gemini Pro API keys (optional - for prompt enhancement)
+let geminiProKeys = [];
+let currentProKeyIndex = 0;
 
 try {
-    geminiKeys = fs.readFileSync('keys.txt', 'utf-8')
+    geminiProKeys = fs.readFileSync('keys.txt', 'utf-8')
         .split('\n')
         .map(key => key.trim())
         .filter(key => key.length > 0);
-    console.log(`✅ Loaded ${geminiKeys.length} Gemini API keys from keys.txt`);
+    console.log(`✅ Loaded ${geminiProKeys.length} Gemini Pro API keys from keys.txt`);
 } catch (error) {
-    console.warn('⚠️  WARNING: keys.txt not found. Translation features will be disabled.');
-    console.warn('   Create keys.txt with Gemini API keys (one per line) to enable translation.\n');
+    console.warn('⚠️  WARNING: keys.txt not found. Prompt enhancement will be disabled.');
+    console.warn('   Create keys.txt with Gemini API keys (one per line) to enable prompt enhancement.\n');
 }
 
-// Get next Gemini key (with rotation)
-function getNextGeminiKey() {
-    if (geminiKeys.length === 0) {
-        throw new Error('No Gemini API keys available');
+// Load Gemini Flash API keys (optional - for translation)
+let geminiFlashKeys = [];
+let currentFlashKeyIndex = 0;
+
+try {
+    geminiFlashKeys = fs.readFileSync('flash.txt', 'utf-8')
+        .split('\n')
+        .map(key => key.trim())
+        .filter(key => key.length > 0);
+    console.log(`✅ Loaded ${geminiFlashKeys.length} Gemini Flash API keys from flash.txt`);
+} catch (error) {
+    console.warn('⚠️  WARNING: flash.txt not found. Translation will be disabled.');
+    console.warn('   Create flash.txt with Gemini API keys (one per line) to enable translation.\n');
+}
+
+// Get next Gemini key (with rotation) from specified pool
+function getNextGeminiKey(keyPool = 'flash') {
+    if (keyPool === 'pro') {
+        if (geminiProKeys.length === 0) {
+            throw new Error('No Gemini Pro API keys available');
+        }
+        const key = geminiProKeys[currentProKeyIndex];
+        currentProKeyIndex = (currentProKeyIndex + 1) % geminiProKeys.length;
+        return key;
+    } else {
+        if (geminiFlashKeys.length === 0) {
+            throw new Error('No Gemini Flash API keys available');
+        }
+        const key = geminiFlashKeys[currentFlashKeyIndex];
+        currentFlashKeyIndex = (currentFlashKeyIndex + 1) % geminiFlashKeys.length;
+        return key;
     }
-    const key = geminiKeys[currentKeyIndex];
-    currentKeyIndex = (currentKeyIndex + 1) % geminiKeys.length;
-    return key;
 }
 
 // Available Gemini models (in order of preference)
@@ -53,17 +77,17 @@ const GEMINI_MODELS = [
 ];
 
 // Call Gemini with automatic key and model rotation
-async function callGemini(preferredModel, prompt, maxRetries = 10) {
+async function callGemini(preferredModel, prompt, keyPool = 'flash', maxRetries = 10) {
     let modelIndex = GEMINI_MODELS.indexOf(preferredModel);
     if (modelIndex === -1) modelIndex = 0;
     
     for (let modelAttempt = 0; modelAttempt < GEMINI_MODELS.length; modelAttempt++) {
         const currentModel = GEMINI_MODELS[(modelIndex + modelAttempt) % GEMINI_MODELS.length];
-        console.log(`Trying model: ${currentModel}`);
+        console.log(`Trying model: ${currentModel} with ${keyPool} keys`);
         
         for (let keyAttempt = 0; keyAttempt < maxRetries; keyAttempt++) {
             try {
-                const apiKey = getNextGeminiKey();
+                const apiKey = getNextGeminiKey(keyPool);
                 const ai = new GoogleGenAI({ apiKey });
                 
                 const response = await ai.models.generateContent({
@@ -144,7 +168,7 @@ ${chunks[i]}
 Myanmar translation:`;
 
         try {
-            const translation = await callGemini(preferredModel, translatePrompt);
+            const translation = await callGemini(preferredModel, translatePrompt, 'flash');
             translatedChunks.push(translation);
             console.log(`✅ Chunk ${i + 1}/${chunks.length} translated`);
         } catch (error) {
@@ -183,7 +207,7 @@ app.post('/api/chat', async (req, res) => {
         // STEP 1: Enhance prompt with Gemini 2.5-pro (if keys available)
         let enhancedPrompt = userMessage;
         
-        if (geminiKeys.length > 0) {
+        if (geminiProKeys.length > 0) {
             console.log('\n⚡ STEP 1: Enhancing prompt with Gemini 2.5-pro...');
             const enhancePrompt = `You are a prompt enhancement specialist. Transform the following user input into a detailed, comprehensive prompt that will elicit a thorough, informative response from an AI assistant.
 
@@ -199,14 +223,14 @@ User input: ${userMessage}
 Enhanced prompt (output ONLY the enhanced prompt, nothing else):`;
 
             try {
-                enhancedPrompt = await callGemini('gemini-2.5-pro', enhancePrompt);
+                enhancedPrompt = await callGemini('gemini-2.5-pro', enhancePrompt, 'pro');
                 console.log('✅ Enhanced prompt created');
             } catch (error) {
                 console.log('⚠️ Prompt enhancement failed, using original prompt');
                 enhancedPrompt = userMessage;
             }
         } else {
-            console.log('\n⚠️ STEP 1: Skipped (no Gemini keys), using original prompt');
+            console.log('\n⚠️ STEP 1: Skipped (no Gemini Pro keys), using original prompt');
         }
 
         // STEP 2: Send enhanced prompt to Claude for response
@@ -233,7 +257,7 @@ Enhanced prompt (output ONLY the enhanced prompt, nothing else):`;
         // STEP 3: Translate to Myanmar using chunked translation (if keys available)
         let finalResponse = englishResponse;
         
-        if (geminiKeys.length > 0) {
+        if (geminiFlashKeys.length > 0) {
             console.log('\n⚡ STEP 3: Translating to Myanmar (chunked)...');
             try {
                 finalResponse = await translateInChunks(englishResponse, 'gemini-2.5-flash');
@@ -243,7 +267,7 @@ Enhanced prompt (output ONLY the enhanced prompt, nothing else):`;
                 finalResponse = englishResponse;
             }
         } else {
-            console.log('\n⚠️ STEP 3: Skipped (no Gemini keys), returning English response');
+            console.log('\n⚠️ STEP 3: Skipped (no Gemini Flash keys), returning English response');
         }
         
         console.log('\n✨ Workflow complete!\n');
@@ -279,7 +303,8 @@ app.get('/api/health', (req, res) => {
     res.json({ 
         status: 'ok', 
         workflow: 'Gemini 2.5 Pro → Claude 4.5 → Gemini 2.5 Flash (Chunked)',
-        geminiKeys: geminiKeys.length,
+        geminiProKeys: geminiProKeys.length,
+        geminiFlashKeys: geminiFlashKeys.length,
         timestamp: new Date().toISOString() 
     });
 });
@@ -295,7 +320,7 @@ app.listen(PORT, () => {
 ║  Step 1: Gemini 2.5 Pro (Prompt Enhancement)         ║
 ║  Step 2: Claude Sonnet 4.5 (Response Generation)     ║
 ║  Step 3: Gemini 2.5 Flash (Chunked Translation)      ║
-║  Gemini Keys: ${geminiKeys.length} keys loaded                        ║
+║  Pro Keys: ${geminiProKeys.length} | Flash Keys: ${geminiFlashKeys.length}                      ║
 ║                                                       ║
 ║  Ready to chat!                                       ║
 ║                                                       ║
