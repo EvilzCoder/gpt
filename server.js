@@ -152,7 +152,7 @@ async function translateInChunks(text, preferredModel = 'gemini-2.5-flash') {
 
 Translate the following English text to Myanmar (Burmese) language with these characteristics:
 - Use a very casual, warm, affectionate tone like talking to a close friend
-- Call the reader "မောင်" (big brother) occasionally
+- Call the reader "အကို" (ako/older brother) occasionally
 - Refer to yourself as "ညီမလေး" (little sister) when appropriate
 - Use LOTS of emojis throughout (😊, 💕, 🥰, 😘, 🤭, 😜, 🥺, etc.)
 - Use casual Myanmar phrases like "ဟီးဟီး", "အင်းပါ", "ကဲ", "နော်", "လေ", "ကွာ" frequently
