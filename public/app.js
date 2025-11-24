@@ -29,6 +29,8 @@ class ChatApp {
         this.newChatBtn = document.getElementById('newChatBtn');
         this.welcomeScreen = document.getElementById('welcomeScreen');
         this.charCount = document.getElementById('charCount');
+        this.sidebarToggle = document.getElementById('sidebarToggle');
+        this.sidebar = document.querySelector('.sidebar');
     }
 
     initializeEventListeners() {
@@ -63,6 +65,23 @@ class ChatApp {
                 this.messageInput.focus();
             });
         });
+
+        // Sidebar toggle
+        this.sidebarToggle.addEventListener('click', () => {
+            this.toggleSidebar();
+        });
+    }
+
+    toggleSidebar() {
+        const isMobile = window.innerWidth <= 768;
+        
+        if (isMobile) {
+            // Mobile: toggle 'open' class
+            this.sidebar.classList.toggle('open');
+        } else {
+            // Desktop: toggle 'closed' class
+            this.sidebar.classList.toggle('closed');
+        }
     }
 
     updateCharCount() {
