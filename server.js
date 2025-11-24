@@ -79,6 +79,78 @@ async function callGemini(preferredModel, prompt, maxRetries = 10) {
     throw new Error('All Gemini models and keys exhausted');
 }
 
+// Split text into chunks for translation
+function splitTextIntoChunks(text, maxChunkSize = 2000) {
+    // Split by paragraphs (double newlines)
+    const paragraphs = text.split(/\n\n+/);
+    const chunks = [];
+    let currentChunk = '';
+    
+    for (const paragraph of paragraphs) {
+        // If adding this paragraph would exceed the limit, start a new chunk
+        if (currentChunk.length + paragraph.length + 2 > maxChunkSize && currentChunk.length > 0) {
+            chunks.push(currentChunk.trim());
+            currentChunk = paragraph;
+        } else {
+            currentChunk += (currentChunk ? '\n\n' : '') + paragraph;
+        }
+    }
+    
+    // Add the last chunk
+    if (currentChunk.trim()) {
+        chunks.push(currentChunk.trim());
+    }
+    
+    return chunks;
+}
+
+// Translate large text in chunks
+async function translateInChunks(text, preferredModel = 'gemini-2.5-flash') {
+    const chunks = splitTextIntoChunks(text, 2000);
+    console.log(`📦 Split into ${chunks.length} chunks for translation`);
+    
+    const translatedChunks = [];
+    
+    for (let i = 0; i < chunks.length; i++) {
+        console.log(`🔄 Translating chunk ${i + 1}/${chunks.length}...`);
+        
+        const translatePrompt = `You are a friendly Myanmar language translator with a playful, affectionate personality.
+
+Translate the following English text to Myanmar (Burmese) language with these characteristics:
+- Use a very casual, warm, affectionate tone like talking to a close friend
+- Call the reader "မောင်" (big brother) occasionally
+- Refer to yourself as "ညီမလေး" (little sister) when appropriate
+- Use LOTS of emojis throughout (😊, 💕, 🥰, 😘, 🤭, 😜, 🥺, etc.)
+- Use casual Myanmar phrases like "ဟီးဟီး", "အင်းပါ", "ကဲ", "နော်", "လေ", "ကွာ" frequently
+- Keep it engaging, fun, and conversational
+- Maintain all the detailed information from the original text
+- Add personality and warmth to the translation
+
+IMPORTANT: This is chunk ${i + 1} of ${chunks.length}. Translate ONLY this chunk, maintaining context.
+
+English text:
+${chunks[i]}
+
+Myanmar translation:`;
+
+        try {
+            const translation = await callGemini(preferredModel, translatePrompt);
+            translatedChunks.push(translation);
+            console.log(`✅ Chunk ${i + 1}/${chunks.length} translated`);
+        } catch (error) {
+            console.log(`⚠️ Chunk ${i + 1} translation failed, using English`);
+            translatedChunks.push(chunks[i]);
+        }
+        
+        // Small delay between chunks to avoid rate limiting
+        if (i < chunks.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+    
+    return translatedChunks.join('\n\n');
+}
+
 // Chat endpoint - Direct Claude Sonnet 4.5
 app.post('/api/chat', async (req, res) => {
     try {
@@ -140,11 +212,24 @@ Enhanced prompt (output ONLY the enhanced prompt, nothing else):`;
             temperature: 1.0,
         });
 
-        const response = claudeResponse.content[0].text;
-        console.log('✅ Response generated');
+        const englishResponse = claudeResponse.content[0].text;
+        console.log('✅ Claude response generated');
+
+        // STEP 3: Translate to Myanmar using chunked translation
+        console.log('\n⚡ STEP 3: Translating to Myanmar (chunked)...');
+        
+        let finalResponse;
+        try {
+            finalResponse = await translateInChunks(englishResponse, 'gemini-2.5-flash');
+            console.log('✅ Translation complete!');
+        } catch (error) {
+            console.log('⚠️ Translation failed, returning English response');
+            finalResponse = englishResponse;
+        }
+        
         console.log('\n✨ Workflow complete!\n');
 
-        res.json({ response });
+        res.json({ response: finalResponse });
 
     } catch (error) {
         console.error('Error:', error);
@@ -174,7 +259,7 @@ Enhanced prompt (output ONLY the enhanced prompt, nothing else):`;
 app.get('/api/health', (req, res) => {
     res.json({ 
         status: 'ok', 
-        workflow: 'Gemini 2.5 Pro → Claude Sonnet 4.5',
+        workflow: 'Gemini 2.5 Pro → Claude 4.5 → Gemini 2.5 Flash (Chunked)',
         geminiKeys: geminiKeys.length,
         timestamp: new Date().toISOString() 
     });
@@ -185,10 +270,12 @@ app.listen(PORT, () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║                                                       ║
-║          AI Chat Application                          ║
+║          AI Chat Application (3-Step + Chunking)      ║
 ║                                                       ║
 ║  Server: http://localhost:${PORT}                     ║
-║  Workflow: Gemini 2.5 Pro → Claude Sonnet 4.5        ║
+║  Step 1: Gemini 2.5 Pro (Prompt Enhancement)         ║
+║  Step 2: Claude Sonnet 4.5 (Response Generation)     ║
+║  Step 3: Gemini 2.5 Flash (Chunked Translation)      ║
 ║  Gemini Keys: ${geminiKeys.length} keys loaded                        ║
 ║                                                       ║
 ║  Ready to chat!                                       ║
