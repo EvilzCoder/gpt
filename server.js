@@ -250,16 +250,26 @@ Enhanced prompt (output ONLY the enhanced prompt, nothing else):`;
 
 IMPORTANT CODE EXPLANATION RULES:
 - When explaining code, NEVER use inline comments within the code
-- Always provide clean, uncommented code blocks
-- Write explanations SEPARATELY before or after the code block
-- Use numbered steps or bullet points to explain what each part does
-- Make explanations clear and detailed, but keep code clean and readable
-- Example format:
-  1. First, explain what the code will do
-  2. Show the clean code without comments
-  3. Then explain line by line what each section does
+- Break down the explanation into STEPS, with each step showing BOTH the code snippet AND explanation together
+- Include the relevant code snippet in EACH step so readers don't have to scroll back
+- Format: Step number/title → code snippet → explanation
+- Keep code clean and uncommented
+- Make each step self-contained with its own code snippet
 
-This makes the code much more readable and the explanations clearer.`,
+Example format:
+**Step 1: Create the variable**
+\`\`\`javascript
+const x = 5;
+\`\`\`
+We declare a constant variable x and assign it the value 5.
+
+**Step 2: Calculate the result**
+\`\`\`javascript
+const result = x * 2;
+\`\`\`
+We multiply x by 2 and store it in result.
+
+This makes it easy to read - see code, see explanation, no scrolling back and forth.`,
             messages: claudeMessages,
             temperature: 1.0,
         });
