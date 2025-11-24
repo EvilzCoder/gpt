@@ -30,6 +30,7 @@ body {
 .app-container {
     display: flex;
     height: 100vh;
+    position: relative;
 }
 
 /* Sidebar Styles */
@@ -39,7 +40,8 @@ body {
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, margin-left 0.3s ease;
+    flex-shrink: 0;
 }
 
 .sidebar-header {
@@ -167,6 +169,8 @@ body {
     flex-direction: column;
     background-color: var(--bg-primary);
     position: relative;
+    width: 100%;
+    min-width: 0;
 }
 
 /* Sidebar Toggle Button */
@@ -273,6 +277,7 @@ body {
 /* Messages */
 .messages {
     padding: 20px;
+    max-width: 900px;
     margin: 0 auto;
     width: 100%;
 }
@@ -397,6 +402,7 @@ body {
 }
 
 .input-container {
+    max-width: 900px;
     margin: 0 auto;
     display: flex;
     gap: 12px;
@@ -513,14 +519,40 @@ body {
         opacity: 1;
         pointer-events: all;
         left: 296px;
+        transition: left 0.3s ease;
     }
     
     .sidebar.closed {
-        transform: translateX(-280px);
+        margin-left: -280px;
     }
     
     .sidebar.closed + .main-content .sidebar-toggle {
         left: 16px;
+    }
+    
+    /* Expand messages and input to full width when sidebar is closed */
+    .sidebar.closed ~ .main-content .messages,
+    .sidebar.closed ~ .main-content .input-container {
+        max-width: 100%;
+        padding-left: 60px;
+        padding-right: 60px;
+    }
+}
+
+/* Responsive width adjustments */
+@media (min-width: 769px) and (max-width: 1200px) {
+    .messages,
+    .input-container {
+        max-width: 800px;
+    }
+}
+
+@media (min-width: 1201px) {
+    .sidebar.closed ~ .main-content .messages,
+    .sidebar.closed ~ .main-content .input-container {
+        max-width: 1400px;
+        padding-left: 100px;
+        padding-right: 100px;
     }
 }
 
