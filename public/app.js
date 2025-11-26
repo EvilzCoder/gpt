@@ -91,7 +91,7 @@ class ChatApp {
 
     autoResizeTextarea() {
         this.messageInput.style.height = 'auto';
-        this.messageInput.style.height = Math.min(this.messageInput.scrollHeight, 200) + 'px';
+        this.messageInput.style.height = Math.min(this.messageInput.scrollHeight, 600) + 'px';
     }
 
     loadChats() {

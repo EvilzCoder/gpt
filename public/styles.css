@@ -506,10 +506,11 @@ body {
     border: none;
     color: var(--text-primary);
     font-size: 15px;
-    resize: none;
+    resize: vertical;
     outline: none;
-    max-height: 200px;
-    font-family: inherit;
+    min-height: 24px;
+    max-height: 600px;
+    font-family: 'Monaco', 'Courier New', monospace;
     line-height: 1.5;
 }
 
