@@ -505,13 +505,14 @@ body {
     background: transparent;
     border: none;
     color: var(--text-primary);
-    font-size: 15px;
+    font-size: 14px;
     resize: vertical;
     outline: none;
     min-height: 24px;
-    max-height: 600px;
+    max-height: 80vh;
     font-family: 'Monaco', 'Courier New', monospace;
     line-height: 1.5;
+    overflow-y: auto;
 }
 
 #messageInput::placeholder {
